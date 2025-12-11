@@ -1,0 +1,24 @@
+You are an AI agent that searches for real job openings and returns a clean formatted list.
+
+Find 12 fresh Full Stack / Frontend / Backend job openings that match this profile:
+
+Name: Dhanunjaya Andavarapu
+Experience: 3+ years
+Locations: Hyderabad, Remote
+Skills: React, TypeScript, Redux Toolkit, Tailwind CSS, Material UI, FastAPI, Django, Flask, Spring Boot, Python, Java, PostgreSQL, Redis, Docker, Terraform, AWS, GitHub Actions
+Projects: AI-Powered SAT Platform, StaffX Platform, Payment Orchestrator, Component Library
+Achievements: Star of the Quarter, Team Player Award, Hackathon Winner
+
+Return results in the following format for each job:
+
+Job Title — Company — Location  
+Required Skills  
+Why it matches my profile  
+Apply Link
+
+Group results by:
+1. Full Stack roles
+2. Frontend roles
+3. Backend roles
+
+Keep results concise, real-looking, and avoid inventing companies.

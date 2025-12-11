@@ -1,0 +1,32 @@
+name: Daily Job Alert
+
+on:
+  schedule:
+    - cron: "30 3 * * *"  # 3:30 UTC = 09:00 IST daily
+  workflow_dispatch:
+
+jobs:
+  email-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install openai sendgrid
+
+      - name: Run job alert script
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: |
+          python job_mailer.py
