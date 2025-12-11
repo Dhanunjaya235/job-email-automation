@@ -27,6 +27,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-          TO_EMAIL: ${{ secrets/TO_EMAIL }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: |
           python job_mailer.py
