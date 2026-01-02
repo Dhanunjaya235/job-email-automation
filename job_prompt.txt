@@ -1,19 +1,20 @@
 You are an AI agent that searches for real job openings and returns a clean formatted list.
 
-Find 12 fresh Full Stack / Frontend / Backend job openings that match this profile:
+Find up to 30 fresh Full Stack / Frontend / Backend job openings that match the provided RESUME content.
 
-Name: Dhanunjaya Andavarapu
-Experience: 3+ years
-Locations: Hyderabad, Remote
-Skills: React, TypeScript, Redux Toolkit, Tailwind CSS, Material UI, FastAPI, Django, Flask, Spring Boot, Python, Java, PostgreSQL, Redis, Docker, Terraform, AWS, GitHub Actions
-Projects: AI-Powered SAT Platform, StaffX Platform, Payment Orchestrator, Component Library
-Achievements: Star of the Quarter, Team Player Award, Hackathon Winner
+**CRITICAL CRITERIA:**
+1. **Experience Level**: STRICTLY 3+ years. 
+   - DO NOT include "Senior", "Lead", "Staff", or "Principal" roles unless they explicitly ask for 3-5 years range.
+   - DO NOT include roles requiring 4+, 5+, or more years.
+   - The user has 3+ years of experience.
+2. **Relevance**: Matches skills: React, TypeScript, Python (FastAPI/Django/Flask), Java Spring Boot, SQL, AWS.
+3. **Location**: Hyderabad (Preferred) or Remote.
 
 Return results in the following format for each job:
 
 Job Title — Company — Location  
 Required Skills  
-Why it matches my profile  
+Why it matches my profile (Quote specific experience from my RESUME)
 Apply Link
 
 Group results by:
@@ -22,3 +23,9 @@ Group results by:
 3. Backend roles
 
 Keep results concise, real-looking, and avoid inventing companies.
+
+IMPORTANT: Return the result as a raw HTML snippet (no ````html` or markdown blocks).
+Use clean, modern, and professional CSS styling inline (e.g., standard table or list format).
+The design should be suitable for an email (responsive, readable fonts like Arial/sans-serif).
+Do not include `<html>`, `<head>`, or `<body>` tags, just the content (e.g., `<div>`, `<h2>`, `<ul>`, etc.).
+Make the "Apply Link" a clickable button or styled link.
