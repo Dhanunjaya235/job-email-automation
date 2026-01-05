@@ -107,6 +107,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+token-env/
 env/
 venv/
 ENV/
@@ -138,3 +139,7 @@ dmypy.json
 cython_debug/
 # VS Code settings
 .vscode/
+
+credentials.json
+token.json
+.env

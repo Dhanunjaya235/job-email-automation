@@ -23,11 +23,15 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Restore Gmail auth files
+        run: |
+          echo '${{ secrets.GMAIL_CREDENTIALS_JSON }}' > credentials.json
+          echo '${{ secrets.GMAIL_TOKEN_JSON }}' > token.json
+
       - name: Run job alert script
         env:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'models/gemini-flash-latest' }}

@@ -1,5 +1,8 @@
+from datetime import datetime
 import os
 import json
+import random
+import time
 import requests
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient
@@ -7,7 +10,10 @@ from sendgrid.helpers.mail import Mail
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-
+from email.mime.text import MIMEText
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import base64
 load_dotenv()
 
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
@@ -18,6 +24,8 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
 TO_EMAIL = os.getenv("TO_EMAIL")
 SENT_JOBS_FILE = "sent_jobs.json"
+SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
 
 # -------------------------------------
 # Helper: Deduplication
@@ -177,6 +185,21 @@ def send_email(html_body):
         print("Email failed:", e)
         return False
 
+def send_email_gmail_api(to_email, subject, html_body):
+    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    service = build("gmail", "v1", credentials=creds)
+
+    message = MIMEText(html_body, "html")
+    message["to"] = to_email
+    message["from"] = FROM_EMAIL
+    message["subject"] = subject
+
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+    service.users().messages().send(
+        userId="me",
+        body={"raw": raw}
+    ).execute()
 
 # -------------------------------------
 # MAIN WORKFLOW
@@ -192,15 +215,21 @@ if __name__ == "__main__":
 
     print(f"Processing {len(jobs)} jobs with LangChain (Gemini)...")
     enriched_html = enrich_with_llm(jobs)
+    time.sleep(random.randint(30, 180))
 
-    print("Sending email...")
-    success = send_email(enriched_html)
+    subject = f"Daily Job Matches – {datetime.now().strftime('%d %b %Y')}"
+
+    print("Sending email via Gmail API...")
+    send_email_gmail_api(TO_EMAIL, subject, enriched_html)
+
+    # print("Sending email...")
+    # success = send_email(enriched_html)
     
-    # If email sent successfully, mark jobs as sent
-    if success:
-        new_ids = []
-        for job in jobs:
-            job_id = job.get("job_id", f"{job.get('title')}-{job.get('company_name')}")
-            new_ids.append(job_id)
-        save_sent_jobs(new_ids)
-        print(f"Saved {len(new_ids)} jobs to history.")
+    # # If email sent successfully, mark jobs as sent
+    # if success:
+    new_ids = []
+    for job in jobs:
+        job_id = job.get("job_id", f"{job.get('title')}-{job.get('company_name')}")
+        new_ids.append(job_id)
+    save_sent_jobs(new_ids)
+    print(f"Saved {len(new_ids)} jobs to history.")
