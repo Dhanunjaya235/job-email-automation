@@ -73,7 +73,8 @@ def fetch_jobs(query):
         "q": query,
         "gl": "in",
         "hl": "en",
-        "api_key": SERPAPI_KEY
+        "api_key": SERPAPI_KEY,
+        "tbs": "qdr:d3"  # Filter: Past 3 days
     }
 
     response = requests.get(url, params=params)

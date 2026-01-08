@@ -12,10 +12,13 @@ Find up to 30 fresh Full Stack / Frontend / Backend job openings that match the 
 
 Return results in the following format for each job:
 
-Job Title — Company — Location  
-Required Skills  
+Job Title — Company — Location
+Date Posted: [e.g., 2 days ago] | Applicants: [e.g., Over 100 applicants]
+Required Skills
 Why it matches my profile (Quote specific experience from my RESUME)
 Apply Link
+
+**SORTING**: Sort the final list by "Date Posted" (Newest first).
 
 Group results by:
 1. Full Stack roles
