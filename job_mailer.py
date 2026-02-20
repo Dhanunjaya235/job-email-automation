@@ -14,6 +14,8 @@ from email.mime.text import MIMEText
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import base64
+import smtplib
+
 load_dotenv()
 
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
@@ -25,11 +27,13 @@ FROM_EMAIL = os.getenv("FROM_EMAIL")
 TO_EMAIL = os.getenv("TO_EMAIL")
 SENT_JOBS_FILE = "sent_jobs.json"
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
 
 # -------------------------------------
 # Helper: Deduplication
 # -------------------------------------
+
 
 def load_sent_jobs():
     if os.path.exists(SENT_JOBS_FILE):
@@ -40,15 +44,18 @@ def load_sent_jobs():
             return set()
     return set()
 
+
 def save_sent_jobs(job_ids):
     existing = load_sent_jobs()
     updated = existing.union(set(job_ids))
     with open(SENT_JOBS_FILE, "w") as f:
         json.dump(list(updated), f)
 
+
 # -------------------------------------
 # Helper: Resume Loading
 # -------------------------------------
+
 
 def load_resumes():
     files = ["backend_resume.tex", "fullstack_resume.tex", "frontend_resume.tex"]
@@ -60,9 +67,11 @@ def load_resumes():
                 content += f.read()
     return content
 
+
 # -------------------------------------
 # 1. Fetch REAL jobs using SERPAPI
 # -------------------------------------
+
 
 def fetch_jobs(query):
     print(f"Searching: {query}")
@@ -74,7 +83,7 @@ def fetch_jobs(query):
         "gl": "in",
         "hl": "en",
         "api_key": SERPAPI_KEY,
-        "tbs": "qdr:d3"  # Filter: Past 3 days
+        "tbs": "qdr:d3",  # Filter: Past 3 days
     }
 
     response = requests.get(url, params=params)
@@ -95,18 +104,18 @@ def fetch_all_jobs():
         "Python Backend Developer 3 years experience Remote India",
         "FastAPI Developer 3 years experience Remote India",
         "Django Developer 3 years experience Hyderabad",
-        "Software Engineer 3 years experience Hyderabad"
+        "Software Engineer 3 years experience Hyderabad",
     ]
 
     all_jobs = []
     sent_job_ids = load_sent_jobs()
-    
+
     for q in queries:
         fetched = fetch_jobs(q)
         for job in fetched:
             # Use job_id if present, else construct a unique key from title+company
             job_id = job.get("job_id", f"{job.get('title')}-{job.get('company_name')}")
-            
+
             if job_id not in sent_job_ids:
                 all_jobs.append(job)
             else:
@@ -121,6 +130,7 @@ def fetch_all_jobs():
 # 2. Process using LangChain + Gemini
 # -------------------------------------
 
+
 def enrich_with_llm(jobs):
     if not GEMINI_API_KEY:
         raise ValueError("Set GEMINI_API_KEY to use Gemini.")
@@ -128,25 +138,23 @@ def enrich_with_llm(jobs):
     # Load external prompt
     with open("job_prompt.txt", "r", encoding="utf-8") as f:
         base_prompt = f.read()
-        
+
     # Load resumes
     resume_content = load_resumes()
 
     # Create the LLM instance
     llm = ChatGoogleGenerativeAI(
-        model=GEMINI_MODEL,
-        google_api_key=GEMINI_API_KEY,
-        temperature=0.4
+        model=GEMINI_MODEL, google_api_key=GEMINI_API_KEY, temperature=0.4
     )
 
     # Create Prompt Template
     # We include resumes block
-    template = base_prompt + "\n\nMY RESUMES:\n{resumes}\n\nHere are the raw job listings:\n{jobs_json}"
-    
-    prompt = PromptTemplate(
-        template=template,
-        input_variables=["jobs_json", "resumes"]
+    template = (
+        base_prompt
+        + "\n\nMY RESUMES:\n{resumes}\n\nHere are the raw job listings:\n{jobs_json}"
     )
+
+    prompt = PromptTemplate(template=template, input_variables=["jobs_json", "resumes"])
 
     # Create Chain
     chain = prompt | llm | StrOutputParser()
@@ -155,17 +163,18 @@ def enrich_with_llm(jobs):
     # Limit to e.g. 50 jobs to avoid token limits if too many returned
     jobs_sample = jobs[:50]
     jobs_json = json.dumps(jobs_sample, ensure_ascii=False)
-    
+
     # Run Chain
     print("Invoking LangChain...")
     result = chain.invoke({"jobs_json": jobs_json, "resumes": resume_content})
-    
+
     return result
 
 
 # -------------------------------------
 # 3. Send Email
 # -------------------------------------
+
 
 def send_email(html_body):
     print("Preparing email...")
@@ -174,7 +183,7 @@ def send_email(html_body):
         from_email=FROM_EMAIL,
         to_emails=TO_EMAIL,
         subject="Daily Job Matches \u2013 3+ Years Exp (Filtered)",
-        html_content=html_body
+        html_content=html_body,
     )
 
     try:
@@ -185,6 +194,7 @@ def send_email(html_body):
     except Exception as e:
         print("Email failed:", e)
         return False
+
 
 def send_email_gmail_api(to_email, subject, html_body):
     creds = Credentials.from_authorized_user_file("token.json", SCOPES)
@@ -197,10 +207,26 @@ def send_email_gmail_api(to_email, subject, html_body):
 
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
-    service.users().messages().send(
-        userId="me",
-        body={"raw": raw}
-    ).execute()
+    service.users().messages().send(userId="me", body={"raw": raw}).execute()
+
+
+def send_email_smtp(to_email, subject, html_body):
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+
+    message = MIMEText(html_body, "html")
+    message["From"] = FROM_EMAIL
+    message["To"] = to_email
+    message["Subject"] = subject
+
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    server.starttls()
+    server.login(FROM_EMAIL, os.getenv("GMAIL_APP_PASSWORD"))
+    server.send_message(message)
+    server.quit()
+
+    print("Email sent successfully via SMTP!")
+
 
 # -------------------------------------
 # MAIN WORKFLOW
@@ -221,11 +247,11 @@ if __name__ == "__main__":
     subject = f"Daily Job Matches – {datetime.now().strftime('%d %b %Y')}"
 
     print("Sending email via Gmail API...")
-    send_email_gmail_api(TO_EMAIL, subject, enriched_html)
+    send_email_smtp(TO_EMAIL, subject, enriched_html)
 
     # print("Sending email...")
     # success = send_email(enriched_html)
-    
+
     # # If email sent successfully, mark jobs as sent
     # if success:
     new_ids = []

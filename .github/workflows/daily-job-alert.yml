@@ -34,6 +34,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'models/gemini-flash-latest' }}
+
         run: |
           python job_mailer.py
